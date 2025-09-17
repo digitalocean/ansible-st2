@@ -2,7 +2,7 @@
 - name: Create our apt list for rabbitmq-erlang
   become: true
   copy:
-    dest: /etc/apt/sources.list.d/stackstorm-rabbitmq-erlang.list
+    dest: /etc/apt/sources.list.d/stackstorm_rabbitmq_erlang.list
     content: "deb      \"https://artifactory.internal.digitalocean.com/artifactory/deb-dev-local\" focal main"
     mode: '0644'
   notify: update apt
