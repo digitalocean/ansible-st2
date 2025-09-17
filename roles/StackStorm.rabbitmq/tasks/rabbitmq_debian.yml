@@ -8,6 +8,12 @@
   notify: update apt
   tags: rabbitmq
 
+- name: Update apt cache for good measure
+  become: true
+  ansible.builtin.apt:
+    update_cache: yes
+  tags: rabbitmq
+
 # - name: apt | Add rabbitmq key
 #   become: true
 #   apt_key:
