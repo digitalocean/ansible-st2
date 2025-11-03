@@ -1,4 +1,10 @@
 ---
+# DO ONLY: Various stackstorm setup/configuration fixes
+stackstorm_vars:
+  st2_config:
+    auth:
+      port: 9105
+
 # StackStorm version to install. `present` to install available package, `latest` to get automatic updates or pin it to numeric version like `2.2.0`.
 # On Debian need to specify revision of package like `2.2.0-1`.
 st2_version: latest

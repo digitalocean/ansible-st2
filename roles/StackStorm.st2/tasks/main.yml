@@ -133,6 +133,10 @@
   import_tasks: proxy.yml
   tags: st2, proxy
 
+- name: Fix Prometheus/Stackstorm port conflict
+  import_tasks: do_fixes.yml
+  tags: st2, fixes
+
 - name: Ensure StackStorm services are enabled and running
   become: yes
   service:

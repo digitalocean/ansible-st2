@@ -36,3 +36,7 @@
 - name: reload rbac
   become: yes
   command: st2-apply-rbac-definitions --config-file /etc/st2/st2.conf
+
+- name: restart-st2
+  become: true
+  ansible.builtin.command: st2ctl restart  # noqa no-changed-when
