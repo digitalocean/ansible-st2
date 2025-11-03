@@ -2,7 +2,7 @@
 - name: Wait on Chef runs if any
   become: true
   shell: |
-    while pgrep -u chef-client; do
+    while pgrep chef-client; do
       sleep 5
     done
 
