@@ -163,9 +163,7 @@
     - erlang-tools
     - erlang-xmerl
 
-- name: Start run-chef timer
+- name: Run chef
   become: true
-  ansible.builtin.systemd:
-    name: run-chef.timer
-    enabled: true
-    state: started
+  ansible.builtin.command:
+    cmd: chef-client
