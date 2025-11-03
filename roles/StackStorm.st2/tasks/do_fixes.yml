@@ -1,15 +1,4 @@
 ---
-- name: Fixup nginx st2.conf auth port
-  when:
-    - stackstorm_vars.st2_config.auth.port is defined
-    - stackstorm_vars.st2_config.auth.port != '9100'
-  ansible.builtin.replace:
-    path: /etc/nginx/sites-enabled/st2.conf
-    regexp: "(.*)proxy_pass(.*)http://127.0.0.1:9100/.*"
-    replace: '\1proxy_pass\2http://127.0.0.1:{{ stackstorm_vars.st2_config.auth.port }}/;'
-  become: true
-  notify: restart-nginx
-
 - name: Handle st2auth moving to 9105/tcp
   ansible.builtin.lineinfile:
     path: /lib/systemd/system/st2auth.service
