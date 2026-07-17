@@ -1,5 +1,6 @@
 ---
-# gpg is required for apt_key and may be missing in some minimal installations
+# gpg is required for apt_key / keyring install and may be missing in some
+# minimal installations
 - name: apt | Install gpg
   become: yes
   apt:
@@ -12,6 +13,48 @@
   delay: 3
   until: _task is succeeded
 
+# Ubuntu 22.04+ (Jammy): apt-key is deprecated and Ansible apt_key often fails
+# with "failed to add the key" even when apt-key exits 0. Use signed-by keyrings
+# (same pattern as digitalocean/netbootd#46). Focal (20) keeps apt_key unchanged.
+- name: apt | Ensure keyrings directory
+  become: yes
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+  when: ansible_facts.distribution_major_version | int >= 22
+  tags: [databases, mongodb]
+
+- name: apt | Download mongodb signing key
+  become: yes
+  get_url:
+    url: "https://www.mongodb.org/static/pgp/server-{{ mongodb_major_minor_version }}.asc"
+    dest: "/tmp/mongodb-server-{{ mongodb_major_minor_version }}.asc"
+    mode: '0644'
+  when: ansible_facts.distribution_major_version | int >= 22
+  tags: [databases, mongodb]
+
+- name: apt | Install mongodb keyring
+  become: yes
+  command: >
+    gpg --dearmor --yes
+    -o /etc/apt/keyrings/mongodb-org.gpg
+    /tmp/mongodb-server-{{ mongodb_major_minor_version }}.asc
+  args:
+    creates: /etc/apt/keyrings/mongodb-org.gpg
+  when: ansible_facts.distribution_major_version | int >= 22
+  tags: [databases, mongodb]
+
+- name: apt | Add mongodb repository (keyring)
+  become: yes
+  copy:
+    dest: "/etc/apt/sources.list.d/mongodb-org-{{ mongodb_major_minor_version }}.list"
+    content: |
+      deb [signed-by=/etc/apt/keyrings/mongodb-org.gpg] http://repo.mongodb.org/apt/{{ ansible_facts.distribution|lower }} {{ ansible_facts.distribution_release|lower }}/mongodb-org/{{ mongodb_major_minor_version }} multiverse
+    mode: '0644'
+  when: ansible_facts.distribution_major_version | int >= 22
+  tags: [databases, mongodb]
+
 - name: apt | Add mongodb key
   become: yes
   apt_key:
@@ -23,6 +66,7 @@
   retries: 5
   delay: 3
   until: _task is succeeded
+  when: ansible_facts.distribution_major_version | int < 22
   tags: [databases, mongodb]
 
 - name: apt | Add mongodb repository
@@ -30,6 +74,7 @@
   apt_repository:
     repo: 'deb http://repo.mongodb.org/apt/{{ ansible_facts.distribution|lower }} {{ ansible_facts.distribution_release|lower }}/mongodb-org/{{ mongodb_major_minor_version }} multiverse'
     state: present
+  when: ansible_facts.distribution_major_version | int < 22
   tags: [databases, mongodb]
 
 - name: apt | Install mongodb
@@ -44,6 +89,7 @@
       - mongodb-org-mongos={{ mongodb_version }}*
       - mongodb-org-tools={{ mongodb_version }}*
     state: present
+    update_cache: yes
   register: _task
   retries: 5
   delay: 3

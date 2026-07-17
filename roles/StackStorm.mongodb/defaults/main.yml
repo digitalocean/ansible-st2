@@ -1,3 +1,6 @@
 ---
 # MongoDB default version
-mongodb_version: "{% if ansible_facts.os_family == 'Debian' and ansible_facts.distribution_major_version == '20' %}4.4{% else %}4.0{% endif %}"
+# Focal (20) stays on 4.4. Jammy (22) has no mongodb-org server packages for
+# 4.4/5.0 — the first series with real jammy server packages is 6.0.
+# Older Debian/Ubuntu remain on 4.0.
+mongodb_version: "{% if ansible_facts.os_family == 'Debian' and ansible_facts.distribution_major_version == '20' %}4.4{% elif ansible_facts.os_family == 'Debian' and ansible_facts.distribution_major_version == '22' %}6.0{% else %}4.0{% endif %}"

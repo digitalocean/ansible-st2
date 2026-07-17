@@ -1,12 +1,55 @@
+---
 - name: Ensure apt-transport-https is installed
   become: yes
   apt:
-    name: apt-transport-https
+    name:
+      - apt-transport-https
+      - gpg
     state: present
   register: _task
   retries: 5
   delay: 3
   until: _task is succeeded
+  tags: nodejs
+
+# Ubuntu 22.04+: use signed-by keyrings. Focal keeps apt_key.
+- name: Ensure keyrings directory
+  become: yes
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+  when: ansible_facts.distribution_major_version | int >= 22
+  tags: nodejs
+
+- name: Download nodesource signing key
+  become: yes
+  get_url:
+    url: https://keyserver.ubuntu.com/pks/lookup?op=get&fingerprint=on&search=0x1655A0AB68576280
+    dest: /tmp/nodesource.asc
+    mode: '0644'
+  when: ansible_facts.distribution_major_version | int >= 22
+  tags: nodejs
+
+- name: Install nodesource keyring
+  become: yes
+  command: >
+    gpg --dearmor --yes
+    -o /etc/apt/keyrings/nodesource.gpg
+    /tmp/nodesource.asc
+  args:
+    creates: /etc/apt/keyrings/nodesource.gpg
+  when: ansible_facts.distribution_major_version | int >= 22
+  tags: nodejs
+
+- name: Add nodesource repos debs (keyring)
+  become: yes
+  copy:
+    dest: /etc/apt/sources.list.d/nodesource.list
+    content: |
+      deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_{{ nodejs_major_version }}.x {{ ansible_facts.distribution_release }} main
+    mode: '0644'
+  when: ansible_facts.distribution_major_version | int >= 22
   tags: nodejs
 
 - name: Add nodesource key
@@ -19,6 +62,7 @@
   retries: 5
   delay: 3
   until: _task is succeeded
+  when: ansible_facts.distribution_major_version | int < 22
   tags: nodejs
 
 - name: Add nodesource repos debs
@@ -26,6 +70,7 @@
   apt_repository:
     repo: "deb https://deb.nodesource.com/node_{{ nodejs_major_version }}.x {{ ansible_facts.distribution_release }} main"
     state: present
+  when: ansible_facts.distribution_major_version | int < 22
   tags: nodejs
 
 - name: Install nodejs
@@ -33,6 +78,7 @@
   apt:
     name: nodejs={{ nodejs_major_version }}.*
     state: present
+    update_cache: yes
   register: _task
   retries: 5
   delay: 3
